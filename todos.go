@@ -1,12 +1,26 @@
 package main
 
+import (
+	"errors"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
 var DB []TodoItem = make([]TodoItem, 0)
 var PrimaryKey int = 1
 
 func GetTodoItems() ([]TodoItem, error) {
 	result := make([]TodoItem, 0)
 
-	for _, item := range DB {
+	rows, err := db.Query("SELECT * FROM TODOS")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var item TodoItem
+	for rows.Next() {
+		rows.Scan(&item.TodoId, &item.Text, &item.Done, &item.Description)
 		result = append(result, item)
 	}
 
@@ -16,50 +30,36 @@ func GetTodoItems() ([]TodoItem, error) {
 func GetTodoItem(id int) (*TodoEditor, error) {
 	result := &TodoEditor{}
 
-	for _, item := range DB {
-		if item.TodoId == id {
-			result.Done = item.Done
-			result.Text = item.Text
-			break
-		}
+	rows, err := db.Query("SELECT `Text`, `Done`, `Description` FROM TODOS WHERE `TodoId`=?", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		rows.Scan(&result.Text, &result.Done, &result.Description)
+	} else {
+		return nil, errors.New("item not found")
 	}
 
 	return result, nil
 }
 
 func CreateTodoItem(editor TodoEditor) error {
-	DB = append(DB, TodoItem{
-		TodoId: PrimaryKey,
-		Text:   editor.Text,
-		Done:   editor.Done,
-	})
-	PrimaryKey++
-
-	return nil
+	_, err := db.Exec("INSERT INTO TODOS(`Text`, `Done`, `Description`) VALUES(?, ?, ?)", editor.Text, editor.Done, editor.Description)
+	return err
 
 }
 
 func UpdateTodoItem(editor TodoEditor, id int) error {
 	//UPDATE TODOS SET 'Text'=:text, ""
-	for i := range DB {
-		if DB[i].TodoId == id {
-			DB[i].Text = editor.Text
-			DB[i].Done = editor.Done
-			break
-		}
-	}
-
-	return nil
+	_, err := db.Exec("UPDATE TODOS SET `Text`=?, `Done`=?, `Description`=? WHERE `TodoId`=?", editor.Text, editor.Done, editor.Description, id)
+	return err
 
 }
 
 func DeleteTodoItem(id int) error {
 	//DELETE FROM TODOS WHERE 'TodoId'=:id
-	for i := range DB {
-		if DB[i].TodoId == id {
-			DB = append(DB[:i], DB[i+1:]...)
-			break
-		}
-	}
-	return nil
+	_, err := db.Exec("DELETE FROM TODOS WHERE `TodoId`=?", id)
+	return err
 }

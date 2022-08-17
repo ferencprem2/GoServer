@@ -8,14 +8,16 @@ import (
 )
 
 type TodoEditor struct {
-	Text string
-	Done bool
+	Text        string `json:"text"`
+	Done        bool   `json:"done"`
+	Description string `json:"description"`
 }
 
 type TodoItem struct {
-	TodoId int
-	Text   string
-	Done   bool
+	TodoId      int    `json:"todoId"`
+	Text        string `json:"text"`
+	Done        bool   `json:"done"`
+	Description string `json:"description"`
 }
 
 func Controller_Todos(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +28,7 @@ func Controller_Todos(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid id", http.StatusInternalServerError)
 			return
 		}
-		SendResponse(w, result)
+		SendResponse(w, result, "todoList")
 	case http.MethodPost:
 		var request TodoEditor
 		if !DecodeRequest(w, r, &request) {
@@ -57,7 +59,7 @@ func Controller_Todos_Id(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		SendResponse(w, result)
+		SendResponse(w, result, "todoEditor")
 
 	case http.MethodPatch:
 		var request TodoEditor
